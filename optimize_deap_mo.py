@@ -5,7 +5,7 @@ from graphRouting import PatrollingGraphRoutingProblem, mutation_operation, cros
 from copy import deepcopy
 """ Optimization of a function with DEAP. """
 navigation_map = np.genfromtxt('map.txt', delimiter=' ')
-N_agents = 2
+N_agents = 4
 initial_positions = np.array([10,20,30,40])[:N_agents]
 scale = 3
 mut_gen_prob = 0.1
@@ -32,17 +32,18 @@ def similar_paths(path1, path2):
 def evaluate(individual):
     """ Evaluate an individual. """
 
-    reward = environment.evaluate_path(individual, render=False)
-
+    reward_pre = environment.evaluate_path(individual, render=False)
+    
     # Apply a death penalty when the path is too long.
     for agent_id in individual.keys():
         path = individual[agent_id]
+        reward = reward_pre[agent_id]
         distance = sum([environment.G[path[i]][path[i+1]]['weight'] for i in range(len(path)-1)])
         if distance > environment.max_distance:
-            reward['Error'] = 10000
+            reward = 10000
             distance = 10000
 
-    return reward['Error'], distance, 
+    return reward, distance, 
 
 def mutate(individual):
     """ Mutate all individuals. """
@@ -69,6 +70,26 @@ def initDict(container, G, initial_positions, distance):
     new_ind.fitness.values = 0.0, 0.0
 
     return new_ind
+
+
+def plot_frente():
+    """
+    Representación del frente de Pareto que hemos obtenido
+    """
+    datos_pareto = np.loadtxt("fitnessmultioptimize_deap.txt", delimiter=",")    
+    plt.scatter(datos_pareto[:, 0], datos_pareto[:, 1], s=30)    
+    
+    # obtenermos el Pareto óptimo
+    with open("zdt1_front.json") as optimal_front_data:
+        pareto_optimo = np.array(json.load(optimal_front_data))
+    plt.scatter(pareto_optimo[:, 0], pareto_optimo[:, 1], 
+                s=10, alpha=0.4)
+    plt.xlabel("FZDT11")
+    plt.ylabel("FZDT12")
+    plt.grid(True)
+    plt.legend(["Pareto obtenido","Pareto óptimo"], loc="upper right")
+    plt.savefig("ParetoBenchmark.pdf", dpi=300, bbox_inches="tight") 
+
 
 
 """ Create the DEAP environment. """
@@ -108,14 +129,31 @@ if __name__ == '__main__':
     hof = tools.ParetoFront(similar=similar_paths)
 
     # Parameters for the optimization.
-    NGEN = 100
-    MU = 100
-    LAMBDA = 100
-    CXPB = 0.5
-    MUTPB = 0.2
+    NGEN = 10
+    MU = 200
+    LAMBDA = 200
+    CXPB = 0.6
+    MUTPB = 0.3
 
     # Run the optimization.
     pop, log = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN, stats, halloffame=hof)
+
+
+    res_individuos = open("individuosmultioptimize_deap.txt", "w")
+    res_fitness = open("fitnessmultioptimize_deap.txt", "w")
+    test = open("test.txt", "w")
+    for ind in hof:
+        
+        res_individuos.write(str(ind))
+        res_individuos.write("\n")
+        res_fitness.write(str([ind.fitness.values]))
+        res_fitness.write("\n")
+        test.write(str(hof))
+        test.write("\n")
+    res_fitness.close()
+    res_individuos.close()
+
+
 
     # Plot the Pareto front.
 

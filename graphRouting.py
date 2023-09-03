@@ -26,12 +26,19 @@ class PatrollingGraphRoutingProblem:
 		self.initial_positions = initial_positions
 		self.final_positions = final_positions
 		self.waypoints = {agent_id: [] for agent_id in range(n_agents)}
-
+		
+		# self.visited[self.agent_pos[0]][self.agent_pos[1]] = 255
+		# self.S[self.agent_pos[0]][self.agent_pos[1]] = 0
+		# self.R_abs[self.agent_pos[0]][self.agent_pos[1]] -= 50
+		self.S = np.ones(self.navigation_map.shape)
+		print(self.S.shape)
+		self.rho_next = {}
+		self.rho_act = {}
 		benchmark = ground_truth
 
 		# Create the graph
 		self.G = create_graph_from_map(self.navigation_map, self.scale)
-
+		self.L = create_graph_from_map2(self.navigation_map, self.scale)
 		# Create the grund truth #
 		""" Create the benchmark """
 		if benchmark == 'shekel':
@@ -57,10 +64,10 @@ class PatrollingGraphRoutingProblem:
 		self.model.reset()
 
 		self.agent_positions = self.initial_positions.copy()
-
+		self.agent_pos_ant= self.agent_positions
+		
 		# Reset the rewards #
-		self.rewards = {'Error': 0,
-						'Uncertainty': 0}
+		self.rewards = {}
 
 
 		self.waypoints = {agent_id: [list(self.G.nodes[initial_position]['position'])] for agent_id, initial_position in zip(range(self.n_agents), self.initial_positions)}
@@ -70,6 +77,13 @@ class PatrollingGraphRoutingProblem:
 		new_position_coordinates = np.array([self.G.nodes[new_position]['position'] for new_position in self.agent_positions])
 		new_samples = self.ground_truth.read(new_position_coordinates)
 
+		# # Input the previous positions to the model
+		# new_preposition_coordinates = np.array([self.G.nodes[new_preposition]['position'] for new_preposition in self.agent_positions])
+		# new_presamples = self.ground_truth.read(new_preposition_coordinates)
+
+
+
+
 		# Update the model
 		self.model.update(new_position_coordinates, new_samples)
 
@@ -78,6 +92,7 @@ class PatrollingGraphRoutingProblem:
 
 		# Input the initial positions to the model
 
+		
 
 		new_position_coordinates = np.array([self.G.nodes[new_position]['position'] for new_position in self.agent_positions if new_position != -1])
 		
@@ -87,11 +102,12 @@ class PatrollingGraphRoutingProblem:
 
 			# Update the model
 			self.model.update(new_position_coordinates, new_samples)
-			self.information_map = self.model.predict()
+			self.information_map = self.model.predict() # esta es la y , la w en el en paper
 
 			# Initialize the reward variables
-			self.rewards = {'Error': mse(self.model.predict(), self.ground_truth.read()),
-							'Uncertainty': 0}
+			# self.rewards = {'Error': mse(self.model.predict(), self.ground_truth.read()),
+			# 				'Uncertainty': 0,
+			#                 'Visited':0}
 
 	def compute_coverage_mask(self, position: np.ndarray) -> np.ndarray:
 		""" Obtain a circular mask centered in position with a radius of coverage_radius """
@@ -122,10 +138,50 @@ class PatrollingGraphRoutingProblem:
 
 			# Compute the distance traveled by the agents using the edge weight
 			self.agent_distances[i] += self.G[self.agent_positions[i]][new_positions[i]]['weight']
-
+			self.L.nodes[self.agent_positions[i]]['values']=0,1
 
 		# Update the positions of the agents
+		
 		self.agent_positions = new_positions.copy()
+		# self.L[self.agent_positions[0]]['visited']=2
+		# print(self.L.nodes[1]['value'])
+		
+		# self.visited[self.agent_pos_ant[0]][self.agent_pos_ant[1]] = 127 # Casilla anterior sombreada !
+		# self.visited[self.agent_positions[0]][self.agent_positions[1]] = 255 # Casilla visitada bien marcada!
+
+
+		# # Se purga el interés de la casilla de la que venimos # #
+		# self.R_abs[self.agent_pos_ant[0]][self.agent_pos_ant[1]] -= 50 
+
+		for i in range(self.n_agents):
+			# Procesamos el reward #
+			self.rho_next[i] = self.L.nodes.get(self.agent_positions[i], {'value': 0.0})['value']
+			self.rho_act[i] = self.L.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
+	
+			
+# Calcular el valor 'Visited' para cada agente y almacenarlo en self.rewards
+		self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
+		for i in range(self.n_agents):
+			visited_value = self.rho_next[i] - self.rho_act[i]
+			self.rewards[i] = visited_value
+        # Ojito que aquí decidimos cuánto penalizamos visitar una ilegal una anterior o una nueva #
+		#reward = (1-ilegal)*((5.505/255)*(reward-255)+5) - ilegal*(10)
+		
+		for node_index in self.L.nodes:
+			current_value = self.L.nodes[node_index]['value']  # Obtén el valor actual del atributo 'value'
+			new_value = np.min([current_value + 0.05, 1])  # Calcula el nuevo valor
+			self.L.nodes[node_index]['value'] = new_value  # Act
+
+		for i in range(self.n_agents):
+			if self.agent_positions[i] in self.L.nodes:
+				self.L.nodes[self.agent_positions[i]]['value'] = 0.1
+		
+		
+		
+		
+		
+		self.agent_pos_ant= self.agent_positions #casi al final
+
 
 		# Update the waypoints
 		for agent_id, new_position in enumerate(new_positions):
@@ -144,6 +200,7 @@ class PatrollingGraphRoutingProblem:
 		return self.rewards, done
 
 	def evaluate_path(self, multiagent_path: dict, render = False) -> dict:
+	
 		""" Evaluate a path """
 		
 		self.reset()
@@ -153,31 +210,32 @@ class PatrollingGraphRoutingProblem:
 
 		done = False
 		t = 0
+		
 
-		final_rewards = {'Error': 0,
-						'Uncertainty': 0}
+		final_rewards = {}
 
 		while not done:
 
 			next_positions = np.zeros_like(self.agent_positions)
-
+			
 			for i in range(self.n_agents):
 				if t < len(multiagent_path[i]):
 					next_positions[i] = multiagent_path[i][t]
+
 				else:
 					next_positions[i] = -1
 
 			new_rewards, done = self.step(next_positions)
 
-			for key in final_rewards.keys():
-				final_rewards[key] += new_rewards[key]
-	
+			# for key in new_rewards.keys():
+			# 	final_rewards[key] += new_rewards[key]
+			# print(new_rewards)
 			if render:
 				self.render()
 
 			t += 1
 		
-		return final_rewards
+		return new_rewards
 
 	def render(self):
 
@@ -234,6 +292,37 @@ def create_graph_from_map(navigation_map: np.ndarray, resolution: int):
 					G.add_edge(i, j, weight=np.linalg.norm(position - other_position)*resolution)
 
 	return G
+
+
+
+
+def create_graph_from_map2(navigation_map: np.ndarray, resolution: int):
+	""" Create a graph from a navigation map """
+
+	# Obtain the scaled navigation map
+	scaled_navigation_map = navigation_map[::resolution, ::resolution]
+
+	# Obtain the positions of the nodes
+	visitable_positions = np.column_stack(np.where(scaled_navigation_map == 1))
+
+	# Create the graph
+	L = nx.Graph()
+
+	# Add the nodes
+	for i, position in enumerate(visitable_positions):
+		L.add_node(i, position=position[::-1]*resolution, coords=position*resolution)
+		nx.set_node_attributes(L, {i: 1}, 'value')
+	# Add the edges
+	for i, position in enumerate(visitable_positions):
+		for j, other_position in enumerate(visitable_positions):
+			if i != j:
+				if np.linalg.norm(position - other_position) <= np.sqrt(2):
+					L.add_edge(i, j, weight=np.linalg.norm(position - other_position)*resolution)
+
+
+	
+
+	return L
 
 def plot_graph(G: nx.Graph, path: list = None, ax=None, cmap_str='Reds', draw_nodes=True):
 
