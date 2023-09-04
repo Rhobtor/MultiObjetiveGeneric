@@ -230,7 +230,7 @@ class PatrollingGraphRoutingProblem:
 
 			new_rewards, done = self.step(next_positions)
 			
-			print(new_rewards)
+			#print(new_rewards)
 			# for key in new_rewards.keys():
 			# 	final_rewards[key] += new_rewards[key]
 			# print(new_rewards)
@@ -407,7 +407,7 @@ def create_multiagent_random_paths_from_nodes(G, initial_positions, distance, fi
 			multiagent_path = {agent_id: create_random_path_from_nodes(G, initial_positions[agent_id], distance, final_positions[agent_id]) for agent_id in range(len(initial_positions))}
 		else:
 			multiagent_path = {agent_id: create_random_path_from_nodes(G, initial_positions[agent_id], distance) for agent_id in range(len(initial_positions))}
-		print(multiagent_path)
+		#print(multiagent_path)
 		return multiagent_path
 
 def cross_operation_between_paths(G: nx.Graph, path1, path2):
