@@ -163,13 +163,15 @@ class PatrollingGraphRoutingProblem:
 		self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
 		for i in range(self.n_agents):
 			visited_value = self.rho_next[i] - self.rho_act[i]
-			self.rewards[i] = visited_value
+			
+			self.rewards[i] = (-110)*visited_value + 111
         # Ojito que aquí decidimos cuánto penalizamos visitar una ilegal una anterior o una nueva #
 		#reward = (1-ilegal)*((5.505/255)*(reward-255)+5) - ilegal*(10)
 		
 		for node_index in self.L.nodes:
 			current_value = self.L.nodes[node_index]['value']  # Obtén el valor actual del atributo 'value'
-			new_value = np.min([current_value + 0.05, 1])  # Calcula el nuevo valor
+			new_value = min([current_value + 0.05, 1]) # Calcula el nuevo valor
+			
 			self.L.nodes[node_index]['value'] = new_value  # Act
 
 		for i in range(self.n_agents):
@@ -220,21 +222,23 @@ class PatrollingGraphRoutingProblem:
 			
 			for i in range(self.n_agents):
 				if t < len(multiagent_path[i]):
+					
 					next_positions[i] = multiagent_path[i][t]
 
 				else:
 					next_positions[i] = -1
 
 			new_rewards, done = self.step(next_positions)
-
+			
+			print(new_rewards)
 			# for key in new_rewards.keys():
 			# 	final_rewards[key] += new_rewards[key]
 			# print(new_rewards)
 			if render:
 				self.render()
-
+			
 			t += 1
-		
+
 		return new_rewards
 
 	def render(self):
@@ -403,7 +407,7 @@ def create_multiagent_random_paths_from_nodes(G, initial_positions, distance, fi
 			multiagent_path = {agent_id: create_random_path_from_nodes(G, initial_positions[agent_id], distance, final_positions[agent_id]) for agent_id in range(len(initial_positions))}
 		else:
 			multiagent_path = {agent_id: create_random_path_from_nodes(G, initial_positions[agent_id], distance) for agent_id in range(len(initial_positions))}
-
+		print(multiagent_path)
 		return multiagent_path
 
 def cross_operation_between_paths(G: nx.Graph, path1, path2):
@@ -464,15 +468,15 @@ if __name__ == '__main__':
 	np.random.seed(0)
 
 	navigation_map = np.genfromtxt('map.txt', delimiter=' ')
-	N_agents = 2
-	initial_positions = np.array([10,10,30,40])[:N_agents]
-	final_positions = np.array([10,10,30,40])[:N_agents]
+	N_agents = 3
+	initial_positions = np.array([10,20,30,40])[:N_agents]
+	# final_positions = np.array([10,10,30,40])[:N_agents]
 	scale = 3
 
 	environment = PatrollingGraphRoutingProblem(navigation_map = navigation_map,
 												n_agents=N_agents, 
 												initial_positions=initial_positions,
-												final_positions=final_positions,
+												# final_positions=final_positions,
 												scale=scale,
 												max_distance=350.0,
 												ground_truth='shekel',
@@ -480,13 +484,13 @@ if __name__ == '__main__':
 	)
 
 
-	path = create_multiagent_random_paths_from_nodes(environment.G, initial_positions, 150, final_positions)
-
+	# path = create_multiagent_random_paths_from_nodes(environment.G, initial_positions, 150, final_positions)
+	path = create_multiagent_random_paths_from_nodes(environment.G, initial_positions, 150)
 	path_1, path_2 = cross_operation_between_paths(environment.G, path[0], path[1])
-	path_crossed = {0: path_1, 1: path_2}
+	path_crossed = {0: path_1, 1: path_2,2: path_1}
 
 	environment.evaluate_path(path, render=True)
-	environment.evaluate_path(path_crossed, render=True)
+	# environment.evaluate_path(path_crossed, render=True)
 
 	plt.pause(1000)
 
@@ -494,8 +498,9 @@ if __name__ == '__main__':
 	fig, axs = plt.subplots(2, 2, figsize=(10, 5))
 	plot_graph(environment.G, path=path[0], draw_nodes=True, ax=axs[0,0])
 	plot_graph(environment.G, path=path[1], draw_nodes=True, ax=axs[0,1], cmap_str='Greens')
-	plot_graph(environment.G, path=path_crossed[0], draw_nodes=True, ax=axs[1,0])
-	plot_graph(environment.G, path=path_crossed[1], draw_nodes=True, ax=axs[1,1], cmap_str='Greens')
+	plot_graph(environment.G, path=path[2], draw_nodes=True, ax=axs[1,0], cmap_str='Blues')
+	# plot_graph(environment.G, path=path_crossed[0], draw_nodes=True, ax=axs[1,0])
+	# plot_graph(environment.G, path=path_crossed[1], draw_nodes=True, ax=axs[1,1], cmap_str='Greens')
 	plt.show()
 
 	plt.show()
@@ -508,7 +513,6 @@ if __name__ == '__main__':
 
 
 
-				
 
 
 
