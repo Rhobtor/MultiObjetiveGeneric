@@ -5,12 +5,16 @@ from graphRouting import PatrollingGraphRoutingProblem, mutation_operation, cros
 from copy import deepcopy
 """ Optimization of a function with DEAP. """
 navigation_map = np.genfromtxt('map.txt', delimiter=' ')
+importance_map= importance_map = [ np.genfromtxt('map_interested.txt', delimiter=' '), 
+                   np.genfromtxt('map_interested.txt', delimiter=' '),
+                   np.genfromtxt('map_interested.txt', delimiter=' ') ]
 N_agents = 4
 initial_positions = np.array([10,20,30,40])[:N_agents]
 scale = 3
 mut_gen_prob = 0.1
 
 environment = PatrollingGraphRoutingProblem(navigation_map = navigation_map,
+                                                importance_map=importance_map,
 												n_agents=N_agents, 
 												initial_positions=initial_positions,
 												scale=scale,

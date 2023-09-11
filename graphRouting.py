@@ -12,6 +12,7 @@ from sklearn.metrics import mean_squared_error as mse
 class PatrollingGraphRoutingProblem:
 
 	def __init__(self, navigation_map: np.ndarray, 
+			  	importance_map:np.ndarray,
 				scale: int, 
 				n_agents: int, 
 				max_distance: float, 
@@ -20,6 +21,7 @@ class PatrollingGraphRoutingProblem:
 				final_positions: np.ndarray = None):
 
 		self.navigation_map = navigation_map
+		self.information_map= importance_map
 		self.scale = scale
 		self.n_agents = n_agents
 		self.max_distance = max_distance
@@ -31,13 +33,14 @@ class PatrollingGraphRoutingProblem:
 		# self.S[self.agent_pos[0]][self.agent_pos[1]] = 0
 		# self.R_abs[self.agent_pos[0]][self.agent_pos[1]] -= 50
 		self.S = np.ones(self.navigation_map.shape)
+		max_importance_map = tuple([np.sum(item) for item in importance_map])
 		print(self.S.shape)
 		self.rho_next = {}
 		self.rho_act = {}
 		benchmark = ground_truth
 
 		# Create the graph
-		self.G = create_graph_from_map(self.navigation_map, self.scale)
+		self.G = create_graph_from_map(self.navigation_map, self.scale,self.information_map)
 		self.L = create_graph_from_map2(self.navigation_map, self.scale)
 		# Create the grund truth #
 		""" Create the benchmark """
@@ -138,7 +141,7 @@ class PatrollingGraphRoutingProblem:
 
 			# Compute the distance traveled by the agents using the edge weight
 			self.agent_distances[i] += self.G[self.agent_positions[i]][new_positions[i]]['weight']
-			self.L.nodes[self.agent_positions[i]]['values']=0,1
+			self.G.nodes[self.agent_positions[i]]['values']=0,1
 
 		# Update the positions of the agents
 		
@@ -152,12 +155,15 @@ class PatrollingGraphRoutingProblem:
 
 		# # Se purga el interés de la casilla de la que venimos # #
 		# self.R_abs[self.agent_pos_ant[0]][self.agent_pos_ant[1]] -= 50 
-
+		
+		
+		imp=(self.G.nodes[self.agent_positions[0]]['importance'])
+		print(tuple(imp))
 		for i in range(self.n_agents):
 			# Procesamos el reward #
-			self.rho_next[i] = self.L.nodes.get(self.agent_positions[i], {'value': 0.0})['value']
-			self.rho_act[i] = self.L.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
-	
+			self.rho_next[i] = self.G.nodes.get(self.agent_positions[i], {'value': 0.0})['value'] 
+			self.rho_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
+
 			
 # Calcular el valor 'Visited' para cada agente y almacenarlo en self.rewards
 		self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
@@ -168,15 +174,15 @@ class PatrollingGraphRoutingProblem:
         # Ojito que aquí decidimos cuánto penalizamos visitar una ilegal una anterior o una nueva #
 		#reward = (1-ilegal)*((5.505/255)*(reward-255)+5) - ilegal*(10)
 		
-		for node_index in self.L.nodes:
-			current_value = self.L.nodes[node_index]['value']  # Obtén el valor actual del atributo 'value'
+		for node_index in self.G.nodes:
+			current_value = self.G.nodes[node_index]['value']  # Obtén el valor actual del atributo 'value'
 			new_value = min([current_value + 0.05, 1]) # Calcula el nuevo valor
 			
-			self.L.nodes[node_index]['value'] = new_value  # Act
+			self.G.nodes[node_index]['value'] = new_value  # Act
 
 		for i in range(self.n_agents):
 			if self.agent_positions[i] in self.L.nodes:
-				self.L.nodes[self.agent_positions[i]]['value'] = 0.1
+				self.G.nodes[self.agent_positions[i]]['value'] = 0.1
 		
 		
 		
@@ -272,7 +278,7 @@ class PatrollingGraphRoutingProblem:
 		self.fig.canvas.draw()
 		plt.pause(0.01)
 
-def create_graph_from_map(navigation_map: np.ndarray, resolution: int):
+def create_graph_from_map(navigation_map: np.ndarray, resolution: int,importance_map: np.ndarray):
 	""" Create a graph from a navigation map """
 
 	# Obtain the scaled navigation map
@@ -287,7 +293,17 @@ def create_graph_from_map(navigation_map: np.ndarray, resolution: int):
 	# Add the nodes
 	for i, position in enumerate(visitable_positions):
 		G.add_node(i, position=position[::-1]*resolution, coords=position*resolution)
-
+		nx.set_node_attributes(G, {i: 1}, 'value')
+		x_index, y_index = position * resolution
+		importance_values = [item[x_index, y_index] for item in importance_map]
+		nx.set_node_attributes(G, {i:importance_values},'importance')
+	
+	# for i, position in enumerate(visitable_positions):
+	# 	G.add_node(i, position=position[::-1]*resolution, coords=position*resolution)
+	# 	nx.set_node_attributes(G, {i: 1}, 'value')
+	# 	x_index, y_index = position // resolution
+	# 	importance_values = [item[x_index, y_index] for item in importance_map]
+	# 	nx.set_node_attributes(G, importance_values,'importance')
 	# Add the edges
 	for i, position in enumerate(visitable_positions):
 		for j, other_position in enumerate(visitable_positions):
@@ -468,12 +484,16 @@ if __name__ == '__main__':
 	np.random.seed(0)
 
 	navigation_map = np.genfromtxt('map.txt', delimiter=' ')
+	importance_map= importance_map = [ np.genfromtxt('map_interested1.txt', delimiter=' '), 
+                   np.genfromtxt('map_interested2.txt', delimiter=' '),
+                   np.genfromtxt('map_interested3.txt', delimiter=' ') ]
 	N_agents = 3
 	initial_positions = np.array([10,20,30,40])[:N_agents]
 	# final_positions = np.array([10,10,30,40])[:N_agents]
 	scale = 3
 
 	environment = PatrollingGraphRoutingProblem(navigation_map = navigation_map,
+											 	importance_map=importance_map,
 												n_agents=N_agents, 
 												initial_positions=initial_positions,
 												# final_positions=final_positions,
