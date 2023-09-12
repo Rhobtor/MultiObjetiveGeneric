@@ -46,8 +46,10 @@ def evaluate(individual):
         if distance > environment.max_distance:
             reward = 10000
             distance = 10000
-
-    return reward, distance, 
+    
+    reward_t=tuple(reward)
+    print(reward_t)
+    return reward_t, distance, 
 
 def mutate(individual):
     """ Mutate all individuals. """

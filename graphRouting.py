@@ -158,7 +158,8 @@ class PatrollingGraphRoutingProblem:
 		# # Se purga el interés de la casilla de la que venimos # #
 		# self.R_abs[self.agent_pos_ant[0]][self.agent_pos_ant[1]] -= 50 
 		
-		
+		self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
+		visited_values = []
 		
 		for i in range(self.n_agents):
 			# Procesamos el reward #
@@ -166,18 +167,37 @@ class PatrollingGraphRoutingProblem:
 			# self.rho_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
 			# self.rI_next[i] = self.G.nodes.get(self.agent_positions[i], {'importance': 0.0})['importance'] 
 			# self.rI_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'importance': 0.0})['importance']
-			self.rho_next[i] = self.G.nodes.get(self.agent_positions[i], {'value': 0.0})['value'] 
-			self.rho_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
-			self.rI_next[i] = self.G.nodes.get(self.agent_positions[i], {'importance': 0.0})['importance'] 
-			self.rI_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'importance': 0.0})['importance']
+			rho_next[i] = self.G.nodes.get(self.agent_positions[i], {'value': 0.0})['value'] 
+			rho_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
+			rI_next[i] = self.G.nodes.get(self.agent_positions[i], {'importance': 0.0})['importance'] 
+			rI_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'importance': 0.0})['importance']
+			rho_next[i] = np.array(rho_next[i])
+			rho_act[i] = np.array(rho_act[i])
+			rI_next[i] = np.array(rI_next[i])
+			rI_act[i] = np.array(rI_act[i])
+			
+			
+			
+			#visited_value = [rho_next * rI_next - rho_act * rI_act for rI_next,rI_act in zip(rI_next,rI_act)]
+			visited_value = (rho_next * rI_next) - (rho_act * rI_act)
+			
+			
+			self.rewards[i]= visited_value
+			print(self.rewards)
+			#print(self.rewards)
+			#visited_values.append(tuple([visited_value]))  # Convert the value to a list before creating a tuple
+			#self.rewards = tuple([v3])
 			
 		# Calcular el valor 'Visited' para cada agente y almacenarlo en self.rewards
-		self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
-		for i in range(self.n_agents):
-			visited_value = np.array(self.rho_next[i])*np.array(self.rI_next[i]) - np.array(self.rho_act[i])*np.array(self.rI_act[i])
+		# self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
+		# visited_values = []
+		# for i in range(self.n_agents):
+		# 	visited_value = (np.array(self.rho_next[i])*np.array(self.rI_next[i]) - np.array(self.rho_act[i])*np.array(self.rI_act[i]))
 			
-			# self.rewards[i] = (-110)*visited_value + 111  #funcion mia de recompensa de prueba
-			self.rewards[i]=visited_value
+		# 	# self.rewards[i] = (-110)*visited_value + 111  #funcion mia de recompensa de prueba
+		# 	# self.rewards[i]= tuple(visited_value)
+		# 	visited_values.append(tuple(visited_value))
+		# 	self.rewards[i]= tuple(visited_value)
         # Ojito que aquí decidimos cuánto penalizamos visitar una ilegal una anterior o una nueva #
 		#reward = (1-ilegal)*((5.505/255)*(reward-255)+5) - ilegal*(10)
 		
@@ -210,7 +230,7 @@ class PatrollingGraphRoutingProblem:
 		done = np.asarray([agent_distance > self.max_distance for agent_distance in self.agent_distances.values()]).all()
 
 		done = done or np.asarray([agent_position == -1 for agent_position in self.agent_positions]).all()
-
+		
 		# Return the rewards
 		return self.rewards, done
 
@@ -240,7 +260,7 @@ class PatrollingGraphRoutingProblem:
 
 				else:
 					next_positions[i] = -1
-
+			
 			new_rewards, done = self.step(next_positions)
 			
 			#print(new_rewards)
