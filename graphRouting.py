@@ -37,6 +37,8 @@ class PatrollingGraphRoutingProblem:
 		print(self.S.shape)
 		self.rho_next = {}
 		self.rho_act = {}
+		self.rI_next = {}
+		self.rI_act = {}
 		benchmark = ground_truth
 
 		# Create the graph
@@ -157,20 +159,25 @@ class PatrollingGraphRoutingProblem:
 		# self.R_abs[self.agent_pos_ant[0]][self.agent_pos_ant[1]] -= 50 
 		
 		
-		imp=(self.G.nodes[self.agent_positions[0]]['importance'])
-		print(tuple(imp))
+		
 		for i in range(self.n_agents):
 			# Procesamos el reward #
+			# self.rho_next[i] = self.G.nodes.get(self.agent_positions[i], {'value': 0.0})['value'] 
+			# self.rho_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
+			# self.rI_next[i] = self.G.nodes.get(self.agent_positions[i], {'importance': 0.0})['importance'] 
+			# self.rI_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'importance': 0.0})['importance']
 			self.rho_next[i] = self.G.nodes.get(self.agent_positions[i], {'value': 0.0})['value'] 
 			self.rho_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
-
+			self.rI_next[i] = self.G.nodes.get(self.agent_positions[i], {'importance': 0.0})['importance'] 
+			self.rI_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'importance': 0.0})['importance']
 			
-# Calcular el valor 'Visited' para cada agente y almacenarlo en self.rewards
+		# Calcular el valor 'Visited' para cada agente y almacenarlo en self.rewards
 		self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
 		for i in range(self.n_agents):
-			visited_value = self.rho_next[i] - self.rho_act[i]
+			visited_value = np.array(self.rho_next[i])*np.array(self.rI_next[i]) - np.array(self.rho_act[i])*np.array(self.rI_act[i])
 			
-			self.rewards[i] = (-110)*visited_value + 111
+			# self.rewards[i] = (-110)*visited_value + 111  #funcion mia de recompensa de prueba
+			self.rewards[i]=visited_value
         # Ojito que aquí decidimos cuánto penalizamos visitar una ilegal una anterior o una nueva #
 		#reward = (1-ilegal)*((5.505/255)*(reward-255)+5) - ilegal*(10)
 		

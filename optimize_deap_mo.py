@@ -5,9 +5,9 @@ from graphRouting import PatrollingGraphRoutingProblem, mutation_operation, cros
 from copy import deepcopy
 """ Optimization of a function with DEAP. """
 navigation_map = np.genfromtxt('map.txt', delimiter=' ')
-importance_map= importance_map = [ np.genfromtxt('map_interested.txt', delimiter=' '), 
-                   np.genfromtxt('map_interested.txt', delimiter=' '),
-                   np.genfromtxt('map_interested.txt', delimiter=' ') ]
+importance_map= importance_map = [ np.genfromtxt('map_interested1.txt', delimiter=' '), 
+                   np.genfromtxt('map_interested2.txt', delimiter=' '),
+                   np.genfromtxt('map_interested3.txt', delimiter=' ') ]
 N_agents = 4
 initial_positions = np.array([10,20,30,40])[:N_agents]
 scale = 3
@@ -133,7 +133,7 @@ if __name__ == '__main__':
     hof = tools.ParetoFront(similar=similar_paths)
 
     # Parameters for the optimization.
-    NGEN = 10
+    NGEN = 5
     MU = 200
     LAMBDA = 200
     CXPB = 0.6
