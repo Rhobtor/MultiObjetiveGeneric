@@ -39,6 +39,10 @@ class PatrollingGraphRoutingProblem:
 		self.rho_act = {}
 		self.rI_next = {}
 		self.rI_act = {}
+		self.roo_next = np.empty(n_agents, dtype=float)
+		self.roo_act = np.empty(n_agents, dtype=float)
+		self.roI_next = np.empty(n_agents, dtype=float)
+		self.roI_act = np.empty(n_agents, dtype=float)
 		benchmark = ground_truth
 
 		# Create the graph
@@ -160,34 +164,57 @@ class PatrollingGraphRoutingProblem:
 		
 		self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
 		visited_values = []
-		
-		for i in range(self.n_agents):
-			# Procesamos el reward #
-			# self.rho_next[i] = self.G.nodes.get(self.agent_positions[i], {'value': 0.0})['value'] 
-			# self.rho_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
-			# self.rI_next[i] = self.G.nodes.get(self.agent_positions[i], {'importance': 0.0})['importance'] 
-			# self.rI_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'importance': 0.0})['importance']
-			rho_next[i] = self.G.nodes.get(self.agent_positions[i], {'value': 0.0})['value'] 
-			rho_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
-			rI_next[i] = self.G.nodes.get(self.agent_positions[i], {'importance': 0.0})['importance'] 
-			rI_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'importance': 0.0})['importance']
-			rho_next[i] = np.array(rho_next[i])
-			rho_act[i] = np.array(rho_act[i])
-			rI_next[i] = np.array(rI_next[i])
-			rI_act[i] = np.array(rI_act[i])
+		self.rewards_t={}
+
+		# for i in range(self.n_agents):
+		# 	# Procesamos el reward #
+		# 	self.rho_next[i] = self.G.nodes.get(self.agent_positions[i], {'value': 0.0})['value'] 
+		# 	self.rho_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
+		# 	self.rI_next[i] = self.G.nodes.get(self.agent_positions[i], {'importance': 0.0})['importance'] 
+		# 	self.rI_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'importance': 0.0})['importance']
+		# 	b = self.rho_act[0]
+		# 	a = [element * b for element in ([self.rI_act[i]] if isinstance(self.rI_act[i], (float, int)) else self.rI_act[i])]
+		# 	c = self.rho_next[0]
+		# 	d = [element * c for element in ([self.rI_next[i]] if isinstance(self.rI_next[i], (float, int)) else self.rI_next[i])]
+		# 	# a=[element * b for element in self.rI_act[i]]
+			
+		# 	# self.roI_next[i] = np.array(self.rI_next[i])
+		# 	# self.roI_act[i] = np.array(self.rI_act[i])
+		# 	# print(self.roI_next)
+		# 	# self.roo_next = np.array(self.roo_next)
+		# 	# self.roo_act = np.array(self.roo_act)
+		# 	# self.roI_next = np.array(self.roI_next)
+		# 	# self.roI_act = np.array(self.roI_act)
+			
+		# 	visited_value= [x - y for x, y in zip(d, a)]
+		# 	# #visited_value = [rho_next * rI_next - rho_act * rI_act for rI_next,rI_act in zip(rI_next,rI_act)]
+		# 	# visited_value = (self.roo_next * self.roI_next) - (self.roo_act * self.roI_act)
 			
 			
-			
-			#visited_value = [rho_next * rI_next - rho_act * rI_act for rI_next,rI_act in zip(rI_next,rI_act)]
-			visited_value = (rho_next * rI_next) - (rho_act * rI_act)
-			
-			
-			self.rewards[i]= visited_value
-			print(self.rewards)
-			#print(self.rewards)
+		# 	self.rewards_t[i]= visited_value
+		# 	self.rewards[i]=tuple(self.rewards_t[i])
+			# print(reward)
+			# print(self.rewards[i])
 			#visited_values.append(tuple([visited_value]))  # Convert the value to a list before creating a tuple
 			#self.rewards = tuple([v3])
 			
+
+		for i in range(self.n_agents):
+			# Procesamos el reward #
+			self.rho_next[i] = self.L.nodes.get(self.agent_positions[i], {'value': 0.0})['value']
+			self.rho_act[i] = self.L.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
+	
+			
+# Calcular el valor 'Visited' para cada agente y almacenarlo en self.rewards
+		self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
+		for i in range(self.n_agents):
+			visited_value = self.rho_next[i] - self.rho_act[i]
+			
+			self.rewards[i] = (-110)*visited_value + 111
+		# self.rewards[i]=(self.rewards_t[i])
+		# print(self.rewards[i])
+
+
 		# Calcular el valor 'Visited' para cada agente y almacenarlo en self.rewards
 		# self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
 		# visited_values = []
@@ -263,7 +290,7 @@ class PatrollingGraphRoutingProblem:
 			
 			new_rewards, done = self.step(next_positions)
 			
-			#print(new_rewards)
+			print(new_rewards)
 			# for key in new_rewards.keys():
 			# 	final_rewards[key] += new_rewards[key]
 			# print(new_rewards)

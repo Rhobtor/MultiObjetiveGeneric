@@ -47,9 +47,9 @@ def evaluate(individual):
             reward = 10000
             distance = 10000
     
-    reward_t=tuple(reward)
-    print(reward_t)
-    return reward_t, distance, 
+    
+    print(reward)
+    return reward, distance, 
 
 def mutate(individual):
     """ Mutate all individuals. """
@@ -135,7 +135,7 @@ if __name__ == '__main__':
     hof = tools.ParetoFront(similar=similar_paths)
 
     # Parameters for the optimization.
-    NGEN = 5
+    NGEN = 2
     MU = 200
     LAMBDA = 200
     CXPB = 0.6
