@@ -38,18 +38,18 @@ def evaluate(individual):
 
     reward_pre = environment.evaluate_path(individual, render=False)
     
+    reward=[]
     # Apply a death penalty when the path is too long.
     for agent_id in individual.keys():
         path = individual[agent_id]
-        reward = reward_pre[agent_id]
+        # reward = reward_pre[agent_id]
         distance = sum([environment.G[path[i]][path[i+1]]['weight'] for i in range(len(path)-1)])
         if distance > environment.max_distance:
             reward = 10000
             distance = 10000
     
-    
-    print(reward)
-    return reward, distance, 
+    print(reward_pre)
+    return reward_pre, distance, 
 
 def mutate(individual):
     """ Mutate all individuals. """
@@ -135,7 +135,7 @@ if __name__ == '__main__':
     hof = tools.ParetoFront(similar=similar_paths)
 
     # Parameters for the optimization.
-    NGEN = 2
+    NGEN = 1
     MU = 200
     LAMBDA = 200
     CXPB = 0.6

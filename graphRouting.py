@@ -162,22 +162,52 @@ class PatrollingGraphRoutingProblem:
 		# # Se purga el interés de la casilla de la que venimos # #
 		# self.R_abs[self.agent_pos_ant[0]][self.agent_pos_ant[1]] -= 50 
 		
-		self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
+		# self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
 		visited_values = []
-		self.rewards_t={}
+		#self.rewards_t={}
+		#rh_reward = np.array([0]*len(self.G.nodes[1]['rh_reward']), dtype = float)
 
-		# for i in range(self.n_agents):
-		# 	# Procesamos el reward #
-		# 	self.rho_next[i] = self.G.nodes.get(self.agent_positions[i], {'value': 0.0})['value'] 
-		# 	self.rho_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
-		# 	self.rI_next[i] = self.G.nodes.get(self.agent_positions[i], {'importance': 0.0})['importance'] 
-		# 	self.rI_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'importance': 0.0})['importance']
-		# 	b = self.rho_act[0]
-		# 	a = [element * b for element in ([self.rI_act[i]] if isinstance(self.rI_act[i], (float, int)) else self.rI_act[i])]
-		# 	c = self.rho_next[0]
-		# 	d = [element * c for element in ([self.rI_next[i]] if isinstance(self.rI_next[i], (float, int)) else self.rI_next[i])]
-		# 	# a=[element * b for element in self.rI_act[i]]
-			
+		for i in range(self.n_agents):
+			# Procesamos el reward #
+			self.rho_next[i] = self.G.nodes.get(self.agent_positions[i], {'value': 0.0})['value'] 
+			self.rho_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
+			# self.rI_next[i] = self.G.nodes.get(self.agent_positions[i], {'importance': 0.0})['importance'] 
+			# self.rI_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'importance': 0.0})['importance']
+			# b = self.rho_act[0]
+			# a = [element * b for element in ([self.rI_act[i]] if isinstance(self.rI_act[i], (float, int)) else self.rI_act[i])]
+			# c = self.rho_next[0]
+			# d = [element * c for element in ([self.rI_next[i]] if isinstance(self.rI_next[i], (float, int)) else self.rI_next[i])]
+			# # a=[element * b for element in self.rI_act[i]]
+			# Check if the node exists in the graph before accessing its attributes	
+			node_id = self.agent_positions[i]
+			if node_id in self.G.nodes:
+				self.G.nodes[node_id]['rh_reward'] = self.rho_next[i] - self.rho_act[i]
+			#else:
+    # Handle the case where the node doesn't exist, e.g., print an error message
+				#print(f"Node {node_id} does not exist in the graph.")
+
+			#self.G.nodes[self.agent_positions[i]]['rh_reward']= self.rho_next[i] - self.rho_act[i]			
+		reward = np.array([0]*len(self.G.nodes[1]['importance']), dtype = float)
+		idle = [self.G.nodes[node]['rh_reward'] for node in self.agent_positions if node in self.G.nodes]
+		imp = [self.G.nodes[node]['importance'] for node in self.agent_positions if node in self.G.nodes]
+		#reward = [0.0] * len(imp[0])  # Initialize reward with zeros
+		for imp_index in range(len(self.G.nodes[1]['importance'])):
+			for ship_index in range(len(idle)):
+				if imp_index < len(imp[ship_index]) and ship_index < len(idle):
+					reward[imp_index] += np.array(idle[ship_index]) * np.array(imp[ship_index][imp_index])
+
+		
+		for node in range(1, len(self.G)):
+			if node in self.agent_positions:
+				self.G.nodes[node]['importance'] = list(np.array(self.G.nodes[node]['importance']) - 0.2*np.array(self.G.nodes[node]['importance']))
+				for index in range(len(self.G.nodes[node]['importance'])):
+					if self.G.nodes[node]['importance'][index] < 0:
+						self.G.nodes[node]['importance'][index] = 0
+		
+		
+		self.rewards = reward
+
+	
 		# 	# self.roI_next[i] = np.array(self.rI_next[i])
 		# 	# self.roI_act[i] = np.array(self.rI_act[i])
 		# 	# print(self.roI_next)
@@ -197,23 +227,24 @@ class PatrollingGraphRoutingProblem:
 			# print(self.rewards[i])
 			#visited_values.append(tuple([visited_value]))  # Convert the value to a list before creating a tuple
 			#self.rewards = tuple([v3])
-			
 
-		for i in range(self.n_agents):
-			# Procesamos el reward #
-			self.rho_next[i] = self.L.nodes.get(self.agent_positions[i], {'value': 0.0})['value']
-			self.rho_act[i] = self.L.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
-	
-			
-# Calcular el valor 'Visited' para cada agente y almacenarlo en self.rewards
-		self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
-		for i in range(self.n_agents):
-			visited_value = self.rho_next[i] - self.rho_act[i]
-			
-			self.rewards[i] = (-110)*visited_value + 111
-		# self.rewards[i]=(self.rewards_t[i])
-		# print(self.rewards[i])
+#### Parte del codigo antigua, se piensa recompensa de manera individual para cada robot , despues del pensamiento mapa pensar si es posible realizar un cambio en optimize_deap_mo.py para ver si es posible realizar este pensamiento			
+########################################################################################################################
+# 		for i in range(self.n_agents):
+# 			# Procesamos el reward #
+# 			self.rho_next[i] = self.G.nodes.get(self.agent_positions[i], {'value': 0.0})['value']
+# 			self.rho_act[i] = self.G.nodes.get(self.agent_pos_ant[i], {'value': 0.0})['value']
 
+		
+# # Calcular el valor 'Visited' para cada agente y almacenarlo en self.rewards
+# 		self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
+# 		for i in range(self.n_agents):
+# 			visited_value = self.rho_next[i] - self.rho_act[i]
+			
+# 			self.rewards[i] = (-110)*visited_value + 111
+# 		# self.rewards[i]=(self.rewards_t[i])
+# 		# print(self.rewards[i])
+#####################################################################################################################
 
 		# Calcular el valor 'Visited' para cada agente y almacenarlo en self.rewards
 		# self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
@@ -274,7 +305,8 @@ class PatrollingGraphRoutingProblem:
 		t = 0
 		
 
-		final_rewards = {}
+		new_rewards = np.array([0]*len(self.G.nodes[1]['importance']), dtype = float)
+
 
 		while not done:
 
@@ -290,16 +322,18 @@ class PatrollingGraphRoutingProblem:
 			
 			new_rewards, done = self.step(next_positions)
 			
-			print(new_rewards)
+			#print('a',new_rewards)
 			# for key in new_rewards.keys():
 			# 	final_rewards[key] += new_rewards[key]
 			# print(new_rewards)
+			
+			
 			if render:
 				self.render()
 			
 			t += 1
-
-		return new_rewards
+		# print(final_rewards)
+		return tuple(new_rewards)
 
 	def render(self):
 
@@ -351,6 +385,7 @@ def create_graph_from_map(navigation_map: np.ndarray, resolution: int,importance
 		x_index, y_index = position * resolution
 		importance_values = [item[x_index, y_index] for item in importance_map]
 		nx.set_node_attributes(G, {i:importance_values},'importance')
+		nx.set_node_attributes(G, {i: 0}, 'rh_reward')
 	
 	# for i, position in enumerate(visitable_positions):
 	# 	G.add_node(i, position=position[::-1]*resolution, coords=position*resolution)
@@ -539,9 +574,8 @@ if __name__ == '__main__':
 
 	navigation_map = np.genfromtxt('map.txt', delimiter=' ')
 	importance_map= importance_map = [ np.genfromtxt('map_interested1.txt', delimiter=' '), 
-                   np.genfromtxt('map_interested2.txt', delimiter=' '),
-                   np.genfromtxt('map_interested3.txt', delimiter=' ') ]
-	N_agents = 3
+                   np.genfromtxt('map_interested2.txt', delimiter=' ')]
+	N_agents = 4
 	initial_positions = np.array([10,20,30,40])[:N_agents]
 	# final_positions = np.array([10,10,30,40])[:N_agents]
 	scale = 3
@@ -563,7 +597,9 @@ if __name__ == '__main__':
 	path_1, path_2 = cross_operation_between_paths(environment.G, path[0], path[1])
 	path_crossed = {0: path_1, 1: path_2,2: path_1}
 
-	environment.evaluate_path(path, render=True)
+	#environment.evaluate_path(path, render=True)
+	a=environment.evaluate_path(path, render=True)
+	
 	# environment.evaluate_path(path_crossed, render=True)
 
 	plt.pause(1000)
@@ -576,9 +612,6 @@ if __name__ == '__main__':
 	# plot_graph(environment.G, path=path_crossed[0], draw_nodes=True, ax=axs[1,0])
 	# plot_graph(environment.G, path=path_crossed[1], draw_nodes=True, ax=axs[1,1], cmap_str='Greens')
 	plt.show()
-
-	plt.show()
-
 
 
 
