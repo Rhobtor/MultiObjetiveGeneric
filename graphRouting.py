@@ -164,9 +164,9 @@ class PatrollingGraphRoutingProblem:
 		
 		# self.rewards = {}  # Crear un diccionario para almacenar los valores 'Visited' por agente
 		visited_values = []
-		#self.rewards_t={}
+		#self.rewards=()
 		#rh_reward = np.array([0]*len(self.G.nodes[1]['rh_reward']), dtype = float)
-
+###################################################################################################################################################################
 		for i in range(self.n_agents):
 			# Procesamos el reward #
 			self.rho_next[i] = self.G.nodes.get(self.agent_positions[i], {'value': 0.0})['value'] 
@@ -205,8 +205,8 @@ class PatrollingGraphRoutingProblem:
 						self.G.nodes[node]['importance'][index] = 0
 		
 		
-		self.rewards = reward
-
+		self.rewards = tuple(reward)
+##################################################################################################################################################################
 	
 		# 	# self.roI_next[i] = np.array(self.rI_next[i])
 		# 	# self.roI_act[i] = np.array(self.rI_act[i])
@@ -303,10 +303,10 @@ class PatrollingGraphRoutingProblem:
 
 		done = False
 		t = 0
-		
+		step_rewards = [[] for _ in range(self.n_agents)]
 
-		new_rewards = np.array([0]*len(self.G.nodes[1]['importance']), dtype = float)
-
+		#new_rewards = np.array([0]*len(self.G.nodes[1]['importance']), dtype = float)
+		new_reward=[]
 
 		while not done:
 
@@ -321,19 +321,15 @@ class PatrollingGraphRoutingProblem:
 					next_positions[i] = -1
 			
 			new_rewards, done = self.step(next_positions)
-			
-			#print('a',new_rewards)
-			# for key in new_rewards.keys():
-			# 	final_rewards[key] += new_rewards[key]
-			# print(new_rewards)
-			
-			
+			new_reward.append(tuple(new_rewards))
+			print('a',new_rewards)
+
 			if render:
 				self.render()
 			
 			t += 1
-		# print(final_rewards)
-		return tuple(new_rewards)
+
+		return new_reward
 
 	def render(self):
 
@@ -598,8 +594,14 @@ if __name__ == '__main__':
 	path_crossed = {0: path_1, 1: path_2,2: path_1}
 
 	#environment.evaluate_path(path, render=True)
-	a=environment.evaluate_path(path, render=True)
 	
+	a=environment.evaluate_path(path, render=True)
+	reward=[]
+	for valor in a:
+		reward=valor
+		print('f',reward)
+	print('d',reward)
+	#new_reward.append(tuple(new_rewards))
 	# environment.evaluate_path(path_crossed, render=True)
 
 	plt.pause(1000)

@@ -35,10 +35,12 @@ def similar_paths(path1, path2):
 
 def evaluate(individual):
     """ Evaluate an individual. """
-
-    reward_pre = environment.evaluate_path(individual, render=False)
     
+    reward_pre = environment.evaluate_path(individual, render=False)
     reward=[]
+    for valor in reward_pre:
+        reward=valor
+    
     # Apply a death penalty when the path is too long.
     for agent_id in individual.keys():
         path = individual[agent_id]
@@ -48,8 +50,8 @@ def evaluate(individual):
             reward = 10000
             distance = 10000
     
-    print(reward_pre)
-    return reward_pre, distance, 
+    print('c',reward)
+    return reward, distance, 
 
 def mutate(individual):
     """ Mutate all individuals. """
