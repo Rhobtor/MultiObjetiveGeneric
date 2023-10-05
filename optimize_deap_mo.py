@@ -2,14 +2,19 @@ import deap
 from deap import base, creator, tools, algorithms
 import numpy as np
 from graphRouting import PatrollingGraphRoutingProblem, mutation_operation, cross_operation_between_paths, create_multiagent_random_paths_from_nodes
+#from testo import PatrollingGraphRoutingProblem, mutation_operation, cross_operation_between_paths, create_multiagent_random_paths_from_nodes
 from copy import deepcopy
 """ Optimization of a function with DEAP. """
 navigation_map = np.genfromtxt('map.txt', delimiter=' ')
-importance_map= importance_map = [ np.genfromtxt('map_interested1.txt', delimiter=' '), 
-                   np.genfromtxt('map_interested2.txt', delimiter=' '),
-                   np.genfromtxt('map_interested3.txt', delimiter=' ') ]
+importance_map= importance_map = [ np.genfromtxt('interest_map1.txt', delimiter=' '), 
+                   np.genfromtxt('interest_map2.txt', delimiter=' '),
+                   np.genfromtxt('interest_map3.txt', delimiter=' '),
+                    np.genfromtxt('interest_map4.txt', delimiter=' ') ]
+# importance_map= importance_map = np.genfromtxt('map_interested1.txt', delimiter=' ')
+
 N_agents = 4
 initial_positions = np.array([10,20,30,40])[:N_agents]
+final_positions = np.array([10,20,30,40])[:N_agents]
 scale = 3
 mut_gen_prob = 0.1
 
@@ -17,6 +22,7 @@ environment = PatrollingGraphRoutingProblem(navigation_map = navigation_map,
                                                 importance_map=importance_map,
 												n_agents=N_agents, 
 												initial_positions=initial_positions,
+                                                final_positions=final_positions,
 												scale=scale,
 												max_distance=350.0,
 												ground_truth='shekel',
@@ -37,9 +43,9 @@ def evaluate(individual):
     """ Evaluate an individual. """
     
     reward_pre = environment.evaluate_path(individual, render=False)
-    reward=[]
-    for valor in reward_pre:
-        reward=valor
+    
+    reward_p=tuple(reward_pre)
+    
     
     # Apply a death penalty when the path is too long.
     for agent_id in individual.keys():
@@ -50,8 +56,9 @@ def evaluate(individual):
             reward = 10000
             distance = 10000
     
-    print('c',reward)
-    return reward, distance, 
+    #print(len(reward_p))
+
+    return tuple(list(reward_p)+ [distance])
 
 def mutate(individual):
     """ Mutate all individuals. """
@@ -75,8 +82,7 @@ def crossover(ind1, ind2):
 def initDict(container, G, initial_positions, distance):
 
     new_ind = container(create_multiagent_random_paths_from_nodes(G, initial_positions, distance))
-    new_ind.fitness.values = 0.0, 0.0
-
+    new_ind.fitness.values = 0.0, 0.0, 0.0, 0.0 , 0.0
     return new_ind
 
 
@@ -101,10 +107,11 @@ def plot_frente():
 
 
 """ Create the DEAP environment. """
-creator.create("FitnessMax", base.Fitness, weights=(-1.0, -1.0))
+creator.create("FitnessMax", base.Fitness, weights=(1.0, 1.0, 1.0, 1.0, -1.0))
 creator.create("Individual", dict, fitness=creator.FitnessMax)
 
 toolbox = base.Toolbox()
+#toolbox.register("individual", initDict, creator.Individual, environment.G, initial_positions, 150)
 toolbox.register("individual", initDict, creator.Individual, environment.G, initial_positions, 150)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
@@ -123,7 +130,9 @@ if __name__ == '__main__':
     
     # Evaluate the entire population.
     fitnesses = list(map(toolbox.evaluate, pop))
+    #print(len(fitnesses))
     for ind, fit in zip(pop, fitnesses):
+        #print(len(fit))
         ind.fitness.values = fit
     
 
@@ -137,11 +146,11 @@ if __name__ == '__main__':
     hof = tools.ParetoFront(similar=similar_paths)
 
     # Parameters for the optimization.
-    NGEN = 1
+    NGEN = 10
     MU = 200
     LAMBDA = 200
     CXPB = 0.6
-    MUTPB = 0.3
+    MUTPB = 0.4
 
     # Run the optimization.
     pop, log = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN, stats, halloffame=hof)

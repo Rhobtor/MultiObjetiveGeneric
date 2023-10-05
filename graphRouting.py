@@ -196,7 +196,7 @@ class PatrollingGraphRoutingProblem:
 				if imp_index < len(imp[ship_index]) and ship_index < len(idle):
 					reward[imp_index] += np.array(idle[ship_index]) * np.array(imp[ship_index][imp_index])
 
-		
+		# print('bbb',reward)
 		for node in range(1, len(self.G)):
 			if node in self.agent_positions:
 				self.G.nodes[node]['importance'] = list(np.array(self.G.nodes[node]['importance']) - 0.2*np.array(self.G.nodes[node]['importance']))
@@ -205,7 +205,7 @@ class PatrollingGraphRoutingProblem:
 						self.G.nodes[node]['importance'][index] = 0
 		
 		
-		self.rewards = tuple(reward)
+		self.rewards = reward
 ##################################################################################################################################################################
 	
 		# 	# self.roI_next[i] = np.array(self.rI_next[i])
@@ -294,42 +294,78 @@ class PatrollingGraphRoutingProblem:
 
 	def evaluate_path(self, multiagent_path: dict, render = False) -> dict:
 	
+		# """ Evaluate a path """
+		
+		# self.reset()
+
+		# if render:
+		# 	self.render()
+
+		# done = False
+		# t = 0
+		# step_rewards = [[] for _ in range(self.n_agents)]
+
+		# #new_rewards = np.array([0]*len(self.G.nodes[1]['importance']), dtype = float)
+		# new_reward=[]
+		# final_reward={}
+		# while not done:
+
+		# 	next_positions = np.zeros_like(self.agent_positions)
+			
+		# 	for i in range(self.n_agents):
+		# 		if t < len(multiagent_path[i]):
+					
+		# 			next_positions[i] = multiagent_path[i][t]
+
+		# 		else:
+		# 			next_positions[i] = -1
+			
+		# 	new_rewards, done = self.step(next_positions)
+		# 	# new_reward.append(tuple(new_rewards))
+		# 	final_reward=new_reward.append(tuple(new_rewards))
+		# 	#print('a',new_rewards)
+
+		# 	if render:
+		# 		self.render()
+			
+		# 	t += 1
+
+		# return final_reward
+	
 		""" Evaluate a path """
 		
 		self.reset()
 
 		if render:
 			self.render()
-
+		
 		done = False
 		t = 0
-		step_rewards = [[] for _ in range(self.n_agents)]
 
-		#new_rewards = np.array([0]*len(self.G.nodes[1]['importance']), dtype = float)
-		new_reward=[]
-
+		final_rewards = np.array([0]*len(self.G.nodes[1]['importance']), dtype = float)
 		while not done:
-
 			next_positions = np.zeros_like(self.agent_positions)
 			
 			for i in range(self.n_agents):
 				if t < len(multiagent_path[i]):
 					
 					next_positions[i] = multiagent_path[i][t]
-
 				else:
 					next_positions[i] = -1
-			
-			new_rewards, done = self.step(next_positions)
-			new_reward.append(tuple(new_rewards))
-			print('a',new_rewards)
 
+			new_rewards, done = self.step(next_positions)
+
+			#print('esto',new_rewards)
+			final_rewards+=new_rewards
+			# print('esttta',final_rewards)
+			# for key in new_rewards.keys():
+			# 	final_rewards[key] += new_rewards[key]
+			# print(new_rewards)
 			if render:
 				self.render()
 			
 			t += 1
-
-		return new_reward
+		return final_rewards
 
 	def render(self):
 
@@ -573,7 +609,7 @@ if __name__ == '__main__':
                    np.genfromtxt('map_interested2.txt', delimiter=' ')]
 	N_agents = 4
 	initial_positions = np.array([10,20,30,40])[:N_agents]
-	# final_positions = np.array([10,10,30,40])[:N_agents]
+	final_positions = np.array([10,10,30,40])[:N_agents]
 	scale = 3
 
 	environment = PatrollingGraphRoutingProblem(navigation_map = navigation_map,
@@ -600,7 +636,7 @@ if __name__ == '__main__':
 	for valor in a:
 		reward=valor
 		print('f',reward)
-	print('d',reward)
+	print('d',a)
 	#new_reward.append(tuple(new_rewards))
 	# environment.evaluate_path(path_crossed, render=True)
 
