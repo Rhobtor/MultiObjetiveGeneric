@@ -107,7 +107,7 @@ def plot_frente():
 
 
 """ Create the DEAP environment. """
-creator.create("FitnessMax", base.Fitness, weights=(1.0, 1.0, 1.0, 1.0, -1.0))
+creator.create("FitnessMax", base.Fitness, weights=(1.0, 1.0, 1.0, 1.0, 1.0))
 creator.create("Individual", dict, fitness=creator.FitnessMax)
 
 toolbox = base.Toolbox()
